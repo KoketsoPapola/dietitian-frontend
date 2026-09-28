@@ -1,272 +1,189 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-function ClientRegister() {
-  const [registrationSuccess, setRegistrationSuccess] = useState(false)
+const API_BASE_URL = 'https://dietitian-app-rmud.onrender.com'
 
+function ClientRegister() {
   const navigate = useNavigate()
 
-  const handleSubmit = (event) => {
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    dietitian_id: '',
+  })
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [registrationSuccess, setRegistrationSuccess] = useState(false)
+  const [registeredUser, setRegisteredUser] = useState(null)
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }))
+  }
+
+  const handleSubmit = async (event) => {
     event.preventDefault()
 
-    // Client registration API will be connected later.
-    console.log('Client registration submitted')
+    setError('')
+    setLoading(true)
 
-    setRegistrationSuccess(true)
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/auth/register/client`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            full_name: formData.full_name.trim(),
+            email: formData.email.trim(),
+            dietitian_id: formData.dietitian_id.trim(),
+          }),
+        }
+      )
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        const message =
+          data?.detail
+            ? Array.isArray(data.detail)
+              ? data.detail.map((item) => item.msg).join(', ')
+              : data.detail
+            : `Registration failed (${response.status})`
+
+        throw new Error(message)
+      }
+
+      setRegisteredUser(data.user || null)
+      setRegistrationSuccess(true)
+    } catch (err) {
+      console.error('Client registration error:', err)
+      setError(
+        err.message ||
+          'Unable to connect to the server. Please try again.'
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (registrationSuccess) {
     return (
-      <div className="auth-page">
-        <div className="auth-container">
+      <div className="register-container">
+        <div className="register-card">
+          <h2>Registration Successful</h2>
 
-          <div className="auth-brand">
+          <p>
+            Your client account has been registered successfully.
+          </p>
 
-            <Link to="/" className="logo">
-              <span className="logo-icon"></span>
-              <span>NutriCare</span>
-            </Link>
-
-            <h1>Welcome to NutriCare</h1>
-
-            <p>
-              Your nutrition journey starts here. Complete your
-              registration and connect with professional dietary support.
-            </p>
-
-          </div>
-
-          <div className="auth-card success-card">
-
-            <div className="success-icon">
-              ✓
-            </div>
-
-            <div className="auth-header">
-              <h2>Registration Successful</h2>
+          {registeredUser && (
+            <div className="success-details">
+              <p>
+                <strong>Name:</strong> {registeredUser.full_name}
+              </p>
 
               <p>
-                Your client account has been created successfully.
+                <strong>Email:</strong> {registeredUser.email}
+              </p>
+
+              <p>
+                <strong>Client ID:</strong> {registeredUser.id}
               </p>
             </div>
+          )}
 
-            <button
-              type="button"
-              className="primary-btn auth-submit"
-              onClick={() => navigate('/login')}
-            >
-              Continue to Login
-            </button>
-
-            <button
-              type="button"
-              className="back-home"
-              onClick={() => navigate('/')}
-            >
-              Back to Home
-            </button>
-
-          </div>
+          <button onClick={() => navigate('/login')}>
+            Continue to Login
+          </button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
+    <div className="register-container">
+      <div className="register-card">
+        <h2>Client Registration</h2>
 
-        {/* LEFT SIDE */}
-        <div className="auth-brand">
+        <p>Create your client account.</p>
 
-          <Link to="/" className="logo">
-            <span className="logo-icon"></span>
-            <span>NutriCare</span>
-          </Link>
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
 
-          <h1>Client Registration</h1>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="full_name">
+              Full Name
+            </label>
 
-          <p>
-            Create your client account and start your personalised
-            nutrition journey with professional dietary support.
-          </p>
-
-        </div>
-
-        {/* FORM CARD */}
-        <div className="auth-card">
-
-          <div className="auth-header">
-            <h2>Create Client Account</h2>
-
-            <p>
-              Enter your details below to create your account.
-            </p>
+            <input
+              id="full_name"
+              name="full_name"
+              type="text"
+              value={formData.full_name}
+              onChange={handleChange}
+              placeholder="Enter your full name"
+              required
+            />
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="email">
+              Email Address
+            </label>
 
-            {/* NAME + EMAIL */}
-            <div className="form-row">
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Enter your email"
+              required
+            />
+          </div>
 
-              <div className="form-group">
-                <label htmlFor="client_full_name">
-                  Full Name
-                </label>
+          <div className="form-group">
+            <label htmlFor="dietitian_id">
+              Dietitian ID
+            </label>
 
-                <input
-                  type="text"
-                  id="client_full_name"
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="client_email">
-                  Email Address
-                </label>
-
-                <input
-                  type="email"
-                  id="client_email"
-                  placeholder="Enter your email"
-                  required
-                />
-              </div>
-
-            </div>
-
-            {/* DOB + GENDER */}
-            <div className="form-row">
-
-              <div className="form-group">
-                <label htmlFor="date_of_birth">
-                  Date of Birth
-                </label>
-
-                <input
-                  type="date"
-                  id="date_of_birth"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="gender">
-                  Gender
-                </label>
-
-                <select
-                  id="gender"
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Select gender
-                  </option>
-
-                  <option value="Female">
-                    Female
-                  </option>
-
-                  <option value="Male">
-                    Male
-                  </option>
-
-                  <option value="Other">
-                    Other
-                  </option>
-                </select>
-              </div>
-
-            </div>
-
-            {/* HEIGHT */}
-            <div className="form-group">
-              <label htmlFor="height">
-                Height (cm)
-              </label>
-
-              <input
-                type="number"
-                id="height"
-                placeholder="Enter your height in centimetres"
-                min="1"
-                step="0.1"
-              />
-            </div>
-
-            {/* DIETITIAN */}
-            <div className="form-group">
-              <label htmlFor="dietitian_id">
-                Dietitian
-              </label>
-
-              <select
-                id="dietitian_id"
-                defaultValue=""
-              >
-                <option value="">
-                  Select a dietitian (optional)
-                </option>
-
-                <option value="dietitian_001">
-                  Available Dietitian 1
-                </option>
-
-                <option value="dietitian_002">
-                  Available Dietitian 2
-                </option>
-              </select>
-            </div>
-
-            {/* LIFE STAGE */}
-            <div className="form-group">
-              <label htmlFor="life_stage_id">
-                Life Stage
-              </label>
-
-              <select
-                id="life_stage_id"
-                defaultValue=""
-              >
-                <option value="">
-                  Select your life stage (optional)
-                </option>
-
-                <option value="young_adult">
-                  Young Adult
-                </option>
-
-                <option value="adult">
-                  Adult
-                </option>
-
-                <option value="older_adult">
-                  Older Adult
-                </option>
-              </select>
-            </div>
-
-            {/* SUBMIT */}
-            <button
-              type="submit"
-              className="primary-btn auth-submit"
-            >
-              Create Client Account
-            </button>
-
-          </form>
+            <input
+              id="dietitian_id"
+              name="dietitian_id"
+              type="text"
+              value={formData.dietitian_id}
+              onChange={handleChange}
+              placeholder="Enter your dietitian ID"
+              required
+            />
+          </div>
 
           <button
-            type="button"
-            onClick={() => navigate('/register')}
-            className="back-home"
+            type="submit"
+            disabled={loading}
           >
-            Back to Account Type
+            {loading ? 'Registering...' : 'Register'}
           </button>
+        </form>
 
-        </div>
+        <p>
+          Already have an account?{' '}
+          <Link to="/login">
+            Login
+          </Link>
+        </p>
       </div>
     </div>
   )

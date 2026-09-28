@@ -1,282 +1,201 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-function DietitianRegister() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [registrationSuccess, setRegistrationSuccess] = useState(false)
+const API_BASE_URL = 'https://dietitian-app-rmud.onrender.com'
 
+function DietitianRegister() {
   const navigate = useNavigate()
 
-  const handleSubmit = (event) => {
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    license_number: '',
+  })
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [registrationSuccess, setRegistrationSuccess] = useState(false)
+  const [registeredUser, setRegisteredUser] = useState(null)
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }))
+  }
+
+  const handleSubmit = async (event) => {
     event.preventDefault()
 
-    // Dietitian registration API will be connected later.
-    console.log('Dietitian registration submitted')
+    setError('')
+    setLoading(true)
 
-    setRegistrationSuccess(true)
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/auth/register/dietitian`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            full_name: formData.full_name.trim(),
+            email: formData.email.trim(),
+            license_number: formData.license_number.trim(),
+          }),
+        }
+      )
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        const message =
+          data?.detail
+            ? Array.isArray(data.detail)
+              ? data.detail.map((item) => item.msg).join(', ')
+              : data.detail
+            : `Registration failed (${response.status})`
+
+        throw new Error(message)
+      }
+
+      setRegisteredUser(data.user || null)
+      setRegistrationSuccess(true)
+    } catch (err) {
+      console.error('Dietitian registration error:', err)
+
+      setError(
+        err.message ||
+          'Unable to connect to the server. Please try again.'
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (registrationSuccess) {
     return (
-      <div className="auth-page">
-        <div className="auth-container">
+      <div className="register-container">
+        <div className="register-card">
+          <h2>Registration Successful</h2>
 
-          <div className="auth-brand">
+          <p>
+            Your dietitian registration has been submitted successfully.
+          </p>
 
-            <Link to="/" className="logo">
-              <span className="logo-icon"></span>
-              <span>NutriCare</span>
-            </Link>
-
-            <h1>Professional Registration</h1>
-
-            <p>
-              Thank you for registering as a dietitian.
-              Your professional details will be reviewed before
-              your account becomes active.
-            </p>
-
-          </div>
-
-          <div className="auth-card success-card">
-
-            <div className="success-icon">
-              ✓
-            </div>
-
-            <div className="auth-header">
-
-              <h2>Registration Submitted</h2>
-
+          {registeredUser && (
+            <div className="success-details">
               <p>
-                Your dietitian registration has been submitted
-                successfully and is pending approval.
+                <strong>Name:</strong> {registeredUser.full_name}
               </p>
 
+              <p>
+                <strong>Email:</strong> {registeredUser.email}
+              </p>
+
+              <p>
+                <strong>License Number:</strong>{' '}
+                {registeredUser.license_number}
+              </p>
+
+              <p>
+                <strong>Status:</strong> {registeredUser.status}
+              </p>
+
+              <p>
+                <strong>Dietitian ID:</strong> {registeredUser.id}
+              </p>
             </div>
+          )}
 
-            <button
-              type="button"
-              className="primary-btn auth-submit"
-              onClick={() => navigate('/login')}
-            >
-              Continue to Login
-            </button>
-
-            <button
-              type="button"
-              className="back-home"
-              onClick={() => navigate('/')}
-            >
-              Back to Home
-            </button>
-
-          </div>
+          <button onClick={() => navigate('/login')}>
+            Continue to Login
+          </button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
+    <div className="register-container">
+      <div className="register-card">
+        <h2>Dietitian Registration</h2>
 
-        {/* LEFT SIDE */}
-        <div className="auth-brand">
+        <p>
+          Register as a dietitian.
+        </p>
 
-          <Link to="/" className="logo">
-            <span className="logo-icon"></span>
-            <span>NutriCare</span>
-          </Link>
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
 
-          <h1>Dietitian Registration</h1>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="full_name">
+              Full Name
+            </label>
 
-          <p>
-            Register as a dietitian and manage clients,
-            nutrition plans, appointments and professional
-            recommendations.
-          </p>
-
-        </div>
-
-        {/* FORM CARD */}
-        <div className="auth-card">
-
-          <div className="auth-header">
-
-            <h2>Create Dietitian Account</h2>
-
-            <p>
-              Enter your professional information below.
-            </p>
-
+            <input
+              id="full_name"
+              name="full_name"
+              type="text"
+              value={formData.full_name}
+              onChange={handleChange}
+              placeholder="Enter your full name"
+              required
+            />
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="email">
+              Email Address
+            </label>
 
-            {/* FIRST + LAST NAME */}
-            <div className="form-row">
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Enter your email"
+              required
+            />
+          </div>
 
-              <div className="form-group">
+          <div className="form-group">
+            <label htmlFor="license_number">
+              License Number
+            </label>
 
-                <label htmlFor="first_name">
-                  First Name
-                </label>
-
-                <input
-                  type="text"
-                  id="first_name"
-                  placeholder="Enter first name"
-                  required
-                />
-
-              </div>
-
-              <div className="form-group">
-
-                <label htmlFor="last_name">
-                  Last Name
-                </label>
-
-                <input
-                  type="text"
-                  id="last_name"
-                  placeholder="Enter last name"
-                  required
-                />
-
-              </div>
-
-            </div>
-
-            {/* EMAIL */}
-            <div className="form-group">
-
-              <label htmlFor="dietitian_email">
-                Email Address
-              </label>
-
-              <input
-                type="email"
-                id="dietitian_email"
-                placeholder="Enter professional email"
-                required
-              />
-
-            </div>
-
-            {/* PASSWORD */}
-            <div className="form-group">
-
-              <label htmlFor="dietitian_password">
-                Password
-              </label>
-
-              <div className="password-wrapper">
-
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="dietitian_password"
-                  placeholder="Create a password"
-                  minLength="8"
-                  required
-                />
-
-                <button
-                  type="button"
-                  className="password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-
-              </div>
-
-            </div>
-
-            {/* REGISTRATION NUMBER */}
-            <div className="form-group">
-
-              <label htmlFor="registration_number">
-                Registration Number
-              </label>
-
-              <input
-                type="text"
-                id="registration_number"
-                placeholder="Enter professional registration number"
-                required
-              />
-
-            </div>
-
-            {/* SPECIALISATION */}
-            <div className="form-group">
-
-              <label htmlFor="specialisation">
-                Specialisation
-              </label>
-
-              <input
-                type="text"
-                id="specialisation"
-                placeholder="Enter specialisation (optional)"
-              />
-
-            </div>
-
-            {/* BRANCH */}
-            <div className="form-group">
-
-              <label htmlFor="branch_id">
-                Branch
-              </label>
-
-              <select
-                id="branch_id"
-                defaultValue=""
-                required
-              >
-
-                <option value="" disabled>
-                  Select a branch
-                </option>
-
-                <option value="BR001">
-                  Main Branch
-                </option>
-
-                <option value="BR002">
-                  Polokwane Branch
-                </option>
-
-                <option value="BR003">
-                  Johannesburg Branch
-                </option>
-
-              </select>
-
-            </div>
-
-            {/* SUBMIT */}
-            <button
-              type="submit"
-              className="primary-btn auth-submit"
-            >
-              Submit Dietitian Registration
-            </button>
-
-          </form>
+            <input
+              id="license_number"
+              name="license_number"
+              type="text"
+              value={formData.license_number}
+              onChange={handleChange}
+              placeholder="Enter your professional license number"
+              required
+            />
+          </div>
 
           <button
-            type="button"
-            onClick={() => navigate('/register')}
-            className="back-home"
+            type="submit"
+            disabled={loading}
           >
-            Back to Account Type
+            {loading ? 'Registering...' : 'Register'}
           </button>
+        </form>
 
-        </div>
+        <p>
+          Already have an account?{' '}
+          <Link to="/login">
+            Login
+          </Link>
+        </p>
       </div>
     </div>
   )

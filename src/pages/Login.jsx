@@ -1,163 +1,173 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-function Login() {
-  const [showPassword, setShowPassword] = useState(false)
+const API_BASE_URL = 'https://dietitian-app-rmud.onrender.com'
 
+function Login() {
   const navigate = useNavigate()
 
-  const handleSubmit = (event) => {
-    event.preventDefault()
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  })
 
-    // Login API will be connected later.
-    console.log('Login form submitted')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }))
   }
 
-  const handleForgotPassword = () => {
-    console.log('Forgot password selected')
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+
+    setError('')
+    setLoading(true)
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/v1/auth/login`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: formData.email.trim(),
+            password: formData.password,
+          }),
+        }
+      )
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        const message =
+          data?.detail
+            ? Array.isArray(data.detail)
+              ? data.detail.map((item) => item.msg).join(', ')
+              : data.detail
+            : `Login failed (${response.status})`
+
+        throw new Error(message)
+      }
+
+      console.log('Login successful:', data)
+
+      // Store the token returned by the backend.
+      if (data.access_token) {
+        localStorage.setItem(
+          'access_token',
+          data.access_token
+        )
+      }
+
+      if (data.token_type) {
+        localStorage.setItem(
+          'token_type',
+          data.token_type
+        )
+      }
+
+      // Keep the complete login response available.
+      localStorage.setItem(
+        'loginResponse',
+        JSON.stringify(data)
+      )
+
+      // Store the email for use by the frontend.
+      localStorage.setItem(
+        'userEmail',
+        formData.email.trim()
+      )
+
+      navigate('/dashboard')
+    } catch (err) {
+      console.error('Login error:', err)
+
+      setError(
+        err.message ||
+          'Unable to connect to the server. Please try again.'
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-container">
+    <div className="login-container">
+      <div className="login-card">
+        <h2>Login</h2>
 
-        {/* LEFT SIDE */}
-        <div className="auth-brand">
+        <p>
+          Sign in to your account.
+        </p>
 
-          <Link to="/" className="logo">
-            <span className="logo-icon"></span>
-            <span>NutriCare</span>
-          </Link>
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
 
-          <h1>Welcome Back</h1>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="email">
+              Email Address
+            </label>
 
-          <p>
-            Log in to continue your personalised nutrition journey.
-            Manage your nutrition, meal plans and progress in one place.
-          </p>
-
-        </div>
-
-        {/* LOGIN CARD */}
-        <div className="auth-card">
-
-          <div className="auth-header">
-
-            <h2>Login</h2>
-
-            <p>
-              Enter your details to access your account.
-            </p>
-
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Enter your email"
+              required
+            />
           </div>
 
-          <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="password">
+              Password
+            </label>
 
-            {/* EMAIL */}
-            <div className="form-group">
-
-              <label htmlFor="login_email">
-                Email Address
-              </label>
-
-              <input
-                type="email"
-                id="login_email"
-                placeholder="Enter your email"
-                required
-              />
-
-            </div>
-
-            {/* PASSWORD */}
-            <div className="form-group">
-
-              <label htmlFor="login_password">
-                Password
-              </label>
-
-              <div className="password-wrapper">
-
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="login_password"
-                  placeholder="Enter your password"
-                  required
-                />
-
-                <button
-                  type="button"
-                  className="password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-
-              </div>
-
-            </div>
-
-            {/* LOGIN OPTIONS */}
-            <div className="login-options">
-
-              <label className="remember-me">
-
-                <input
-                  type="checkbox"
-                  id="remember_me"
-                />
-
-                <span>
-                  Remember me
-                </span>
-
-              </label>
-
-              <button
-                type="button"
-                className="forgot-password"
-                onClick={handleForgotPassword}
-              >
-                Forgot password?
-              </button>
-
-            </div>
-
-            {/* LOGIN BUTTON */}
-            <button
-              type="submit"
-              className="primary-btn auth-submit"
-            >
-              Login
-            </button>
-
-          </form>
-
-          {/* REGISTER DIVIDER */}
-          <div className="auth-divider">
-            <span>
-              Don't have an account?
-            </span>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Enter your password"
+              required
+            />
           </div>
 
-          {/* REGISTER */}
           <button
-            type="button"
-            className="secondary-btn auth-submit"
-            onClick={() => navigate('/register')}
+            type="submit"
+            disabled={loading}
           >
-            Create an Account
+            {loading ? 'Logging in...' : 'Login'}
           </button>
+        </form>
 
-          {/* HOME */}
-          <Link
-            to="/"
-            className="back-home"
-          >
-            Back to Home
+        <p>
+          Don't have an account?{' '}
+          <Link to="/client-register">
+            Register as Client
           </Link>
+        </p>
 
-        </div>
+        <p>
+          Are you a dietitian?{' '}
+          <Link to="/dietitian-register">
+            Register as Dietitian
+          </Link>
+        </p>
       </div>
     </div>
   )
