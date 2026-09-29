@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -50,7 +51,9 @@ function Login() {
         const message =
           data?.detail
             ? Array.isArray(data.detail)
-              ? data.detail.map((item) => item.msg).join(', ')
+              ? data.detail
+                  .map((item) => item.msg)
+                  .join(', ')
               : data.detail
             : `Login failed (${response.status})`
 
@@ -59,7 +62,7 @@ function Login() {
 
       console.log('Login successful:', data)
 
-      // Store the token returned by the backend.
+      // Store the authentication token.
       if (data.access_token) {
         localStorage.setItem(
           'access_token',
@@ -67,6 +70,7 @@ function Login() {
         )
       }
 
+      // Store the token type.
       if (data.token_type) {
         localStorage.setItem(
           'token_type',
@@ -74,18 +78,19 @@ function Login() {
         )
       }
 
-      // Keep the complete login response available.
+      // Store the complete login response.
       localStorage.setItem(
         'loginResponse',
         JSON.stringify(data)
       )
 
-      // Store the email for use by the frontend.
+      // Store the user's email.
       localStorage.setItem(
         'userEmail',
         formData.email.trim()
       )
 
+      // Redirect to the dashboard after successful login.
       navigate('/dashboard')
     } catch (err) {
       console.error('Login error:', err)
@@ -102,6 +107,7 @@ function Login() {
   return (
     <div className="login-container">
       <div className="login-card">
+
         <h2>Login</h2>
 
         <p>
@@ -115,6 +121,7 @@ function Login() {
         )}
 
         <form onSubmit={handleSubmit}>
+
           <div className="form-group">
             <label htmlFor="email">
               Email Address
@@ -151,23 +158,27 @@ function Login() {
             type="submit"
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading
+              ? 'Logging in...'
+              : 'Login'}
           </button>
+
         </form>
 
         <p>
           Don't have an account?{' '}
-          <Link to="/client-register">
+          <Link to="/register/client">
             Register as Client
           </Link>
         </p>
 
         <p>
           Are you a dietitian?{' '}
-          <Link to="/dietitian-register">
+          <Link to="/register/dietitian">
             Register as Dietitian
           </Link>
         </p>
+
       </div>
     </div>
   )

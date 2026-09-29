@@ -8,6 +8,7 @@ import Register from './pages/Register'
 import ClientRegister from './pages/ClientRegister'
 import DietitianRegister from './pages/DietitianRegister'
 import Appointments from './pages/Appointments'
+import Dashboard from './pages/Dashboard'
 function App() {
   return (
     <BrowserRouter>
@@ -20,6 +21,7 @@ function App() {
           <Route path="/register/client" element={<ClientRegister />} />
           <Route path="/register/dietitian" element={<DietitianRegister />} />
           <Route path="/appointments" element={<Appointments />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Route>
 
       </Routes>

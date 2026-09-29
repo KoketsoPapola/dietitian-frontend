@@ -5,16 +5,14 @@ function Appointments() {
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const [formData, setFormData] = useState({
     client_id: '',
     dietitian_id: '',
     appointment_date: '',
-    appointment_time: '',
   })
-
-  const [submitting, setSubmitting] = useState(false)
-  const [success, setSuccess] = useState('')
 
   const fetchAppointments = async () => {
     try {
@@ -25,15 +23,24 @@ function Appointments() {
         `${API_BASE_URL}/api/v1/appointments`
       )
 
+      const data = await response.json().catch(() => [])
+
       if (!response.ok) {
-        throw new Error('Failed to load appointments')
+        throw new Error(
+          data?.detail || 'Failed to load appointments'
+        )
       }
 
-      const data = await response.json()
-
-      setAppointments(Array.isArray(data) ? data : [])
+      setAppointments(
+        Array.isArray(data) ? data : []
+      )
     } catch (err) {
-      setError(err.message)
+      console.error('Fetch appointments error:', err)
+
+      setError(
+        err.message ||
+          'Unable to load appointments.'
+      )
     } finally {
       setLoading(false)
     }
@@ -44,20 +51,22 @@ function Appointments() {
   }, [])
 
   const handleChange = (event) => {
-    setFormData({
-      ...formData,
-      [event.target.name]: event.target.value,
-    })
+    const { name, value } = event.target
+
+    setFormData((previous) => ({
+      ...previous,
+      [name]: value,
+    }))
   }
 
   const handleSubmit = async (event) => {
     event.preventDefault()
 
-    try {
-      setSubmitting(true)
-      setError('')
-      setSuccess('')
+    setError('')
+    setSuccess('')
+    setSubmitting(true)
 
+    try {
       const response = await fetch(
         `${API_BASE_URL}/api/v1/appointments`,
         {
@@ -65,30 +74,58 @@ function Appointments() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            client_id: formData.client_id.trim(),
+            dietitian_id: formData.dietitian_id.trim(),
+            appointment_date:
+              formData.appointment_date,
+          }),
         }
       )
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null)
+      const data = await response
+        .json()
+        .catch(() => ({}))
 
-        throw new Error(
-          errorData?.detail || 'Failed to create appointment'
-        )
+      if (!response.ok) {
+        const message =
+          data?.detail
+            ? Array.isArray(data.detail)
+              ? data.detail
+                  .map((item) => item.msg)
+                  .join(', ')
+              : data.detail
+            : `Failed to create appointment (${response.status})`
+
+        throw new Error(message)
       }
 
-      setSuccess('Appointment created successfully.')
+      console.log(
+        'Appointment created successfully:',
+        data
+      )
+
+      setSuccess(
+        'Appointment booked successfully.'
+      )
 
       setFormData({
         client_id: '',
         dietitian_id: '',
         appointment_date: '',
-        appointment_time: '',
       })
 
       await fetchAppointments()
     } catch (err) {
-      setError(err.message)
+      console.error(
+        'Create appointment error:',
+        err
+      )
+
+      setError(
+        err.message ||
+          'Unable to book appointment.'
+      )
     } finally {
       setSubmitting(false)
     }
@@ -98,10 +135,15 @@ function Appointments() {
     <div className="page-container">
 
       <section className="page-header">
+        <span className="section-tag">
+          NUTRICARE
+        </span>
+
         <h1>Appointments</h1>
 
         <p>
-          Schedule and manage appointments between clients and dietitians.
+          Schedule and manage appointments between
+          clients and dietitians.
         </p>
       </section>
 
@@ -109,9 +151,16 @@ function Appointments() {
 
         <h2>Book an Appointment</h2>
 
-        <form onSubmit={handleSubmit} className="appointment-form">
+        <p>
+          Enter the client and dietitian details
+          below to schedule an appointment.
+        </p>
 
-          {/* CLIENT ID */}
+        <form
+          onSubmit={handleSubmit}
+          className="appointment-form"
+        >
+
           <div className="form-group">
             <label htmlFor="client_id">
               Client ID
@@ -123,12 +172,11 @@ function Appointments() {
               type="text"
               value={formData.client_id}
               onChange={handleChange}
-              placeholder="Enter client ID"
+              placeholder="e.g. cli_12345678"
               required
             />
           </div>
 
-          {/* DIETITIAN ID */}
           <div className="form-group">
             <label htmlFor="dietitian_id">
               Dietitian ID
@@ -140,12 +188,11 @@ function Appointments() {
               type="text"
               value={formData.dietitian_id}
               onChange={handleChange}
-              placeholder="Enter dietitian ID"
+              placeholder="e.g. diet_12345678"
               required
             />
           </div>
 
-          {/* DATE */}
           <div className="form-group">
             <label htmlFor="appointment_date">
               Date
@@ -161,28 +208,13 @@ function Appointments() {
             />
           </div>
 
-          {/* TIME */}
-          <div className="form-group">
-            <label htmlFor="appointment_time">
-              Time
-            </label>
-
-            <input
-              id="appointment_time"
-              name="appointment_time"
-              type="time"
-              value={formData.appointment_time}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          {/* SUBMIT */}
           <button
             type="submit"
             disabled={submitting}
           >
-            {submitting ? 'Booking...' : 'Book Appointment'}
+            {submitting
+              ? 'Booking...'
+              : 'Book Appointment'}
           </button>
 
         </form>
@@ -212,38 +244,49 @@ function Appointments() {
         ) : (
           <div className="appointment-cards">
 
-            {appointments.map((appointment, index) => (
-              <div
-                className="appointment-card"
-                key={appointment.id || index}
-              >
+            {appointments.map(
+              (appointment, index) => (
+                <div
+                  className="appointment-card"
+                  key={
+                    appointment.appointment_id ||
+                    index
+                  }
+                >
 
-                <h3>
-                  Appointment {appointment.id || index + 1}
-                </h3>
+                  <h3>
+                    Appointment{' '}
+                    {appointment.appointment_id ||
+                      index + 1}
+                  </h3>
 
-                <p>
-                  <strong>Client:</strong>{' '}
-                  {appointment.client_id || 'N/A'}
-                </p>
+                  <p>
+                    <strong>Client:</strong>{' '}
+                    {appointment.client_id ||
+                      'N/A'}
+                  </p>
 
-                <p>
-                  <strong>Dietitian:</strong>{' '}
-                  {appointment.dietitian_id || 'N/A'}
-                </p>
+                  <p>
+                    <strong>Dietitian:</strong>{' '}
+                    {appointment.dietitian_id ||
+                      'N/A'}
+                  </p>
 
-                <p>
-                  <strong>Date:</strong>{' '}
-                  {appointment.appointment_date || 'N/A'}
-                </p>
+                  <p>
+                    <strong>Date:</strong>{' '}
+                    {appointment.appointment_date ||
+                      'N/A'}
+                  </p>
 
-                <p>
-                  <strong>Time:</strong>{' '}
-                  {appointment.appointment_time || 'N/A'}
-                </p>
+                  <p>
+                    <strong>Status:</strong>{' '}
+                    {appointment.status ||
+                      'N/A'}
+                  </p>
 
-              </div>
-            ))}
+                </div>
+              )
+            )}
 
           </div>
         )}
@@ -253,5 +296,5 @@ function Appointments() {
     </div>
   )
 }
-export default Appointments
 
+export default Appointments
