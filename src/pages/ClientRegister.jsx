@@ -9,7 +9,6 @@ function ClientRegister() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    dietitian_id: '',
   })
 
   const [loading, setLoading] = useState(false)
@@ -43,7 +42,6 @@ function ClientRegister() {
           body: JSON.stringify({
             full_name: formData.full_name.trim(),
             email: formData.email.trim(),
-            dietitian_id: formData.dietitian_id.trim(),
           }),
         }
       )
@@ -54,17 +52,23 @@ function ClientRegister() {
         const message =
           data?.detail
             ? Array.isArray(data.detail)
-              ? data.detail.map((item) => item.msg).join(', ')
+              ? data.detail
+                  .map((item) => item.msg)
+                  .join(', ')
               : data.detail
             : `Registration failed (${response.status})`
 
         throw new Error(message)
       }
 
-      setRegisteredUser(data.user || null)
+      setRegisteredUser(data.user || data)
       setRegistrationSuccess(true)
     } catch (err) {
-      console.error('Client registration error:', err)
+      console.error(
+        'Client registration error:',
+        err
+      )
+
       setError(
         err.message ||
           'Unable to connect to the server. Please try again.'
@@ -81,26 +85,40 @@ function ClientRegister() {
           <h2>Registration Successful</h2>
 
           <p>
-            Your client account has been registered successfully.
+            Your client account has been registered
+            successfully.
           </p>
 
           {registeredUser && (
             <div className="success-details">
               <p>
-                <strong>Name:</strong> {registeredUser.full_name}
+                <strong>Name:</strong>{' '}
+                {registeredUser.full_name || 'N/A'}
               </p>
 
               <p>
-                <strong>Email:</strong> {registeredUser.email}
+                <strong>Email:</strong>{' '}
+                {registeredUser.email || 'N/A'}
               </p>
 
-              <p>
-                <strong>Client ID:</strong> {registeredUser.id}
-              </p>
+              {registeredUser.id && (
+                <p>
+                  <strong>Client ID:</strong>{' '}
+                  {registeredUser.id}
+                </p>
+              )}
             </div>
           )}
 
-          <button onClick={() => navigate('/login')}>
+          <p>
+            You can now log in and book an appointment
+            with a dietitian.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+          >
             Continue to Login
           </button>
         </div>
@@ -113,7 +131,10 @@ function ClientRegister() {
       <div className="register-card">
         <h2>Client Registration</h2>
 
-        <p>Create your client account.</p>
+        <p>
+          Create your client account and start your
+          nutrition journey.
+        </p>
 
         {error && (
           <div className="error-message">
@@ -154,27 +175,13 @@ function ClientRegister() {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="dietitian_id">
-              Dietitian ID
-            </label>
-
-            <input
-              id="dietitian_id"
-              name="dietitian_id"
-              type="text"
-              value={formData.dietitian_id}
-              onChange={handleChange}
-              placeholder="Enter your dietitian ID"
-              required
-            />
-          </div>
-
           <button
             type="submit"
             disabled={loading}
           >
-            {loading ? 'Registering...' : 'Register'}
+            {loading
+              ? 'Registering...'
+              : 'Register'}
           </button>
         </form>
 

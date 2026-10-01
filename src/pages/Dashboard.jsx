@@ -20,8 +20,18 @@ function Dashboard() {
     if (savedLogin) {
       try {
         const data = JSON.parse(savedLogin)
-        setUser(data.user || data)
-      } catch {
+
+        // Keep the complete user object.
+        // This allows Appointments.jsx to access the Client ID.
+        const loggedInUser = data.user || data
+
+        setUser(loggedInUser)
+      } catch (error) {
+        console.error(
+          'Unable to read login information:',
+          error
+        )
+
         setUser({
           email: savedEmail || 'User',
         })
@@ -55,7 +65,9 @@ function Dashboard() {
         {/* Dashboard Header */}
         <div className="dashboard-header">
           <div>
-            <span className="section-tag">DASHBOARD</span>
+            <span className="section-tag">
+              DASHBOARD
+            </span>
 
             <h1>
               Welcome back<span>.</span>
@@ -83,11 +95,14 @@ function Dashboard() {
             </span>
 
             <h2>
-              {user.full_name || user.name || 'NutriCare User'}
+              {user.full_name ||
+                user.name ||
+                'NutriCare User'}
             </h2>
 
             <p>
-              {user.email || 'No email available'}
+              {user.email ||
+                'No email available'}
             </p>
           </div>
 
@@ -109,12 +124,15 @@ function Dashboard() {
             <h3>Appointments</h3>
 
             <p>
-              View and manage your upcoming appointments.
+              View and manage your upcoming
+              appointments.
             </p>
 
             <button
               type="button"
-              onClick={() => navigate('/appointments')}
+              onClick={() =>
+                navigate('/appointments')
+              }
             >
               View Appointments →
             </button>
@@ -129,10 +147,17 @@ function Dashboard() {
             <h3>Meal Plans</h3>
 
             <p>
-              Access your personalised nutrition and meal plans.
+              Access your personalised
+              nutrition and meal plans.
             </p>
 
-            <button type="button">
+            <button
+              type="button"
+              onClick={() => {
+                // Meal plans page can be connected
+                // when the frontend page is available.
+              }}
+            >
               View Meal Plans →
             </button>
           </div>
@@ -146,10 +171,17 @@ function Dashboard() {
             <h3>Progress</h3>
 
             <p>
-              Track your nutrition and health progress.
+              Track your nutrition and health
+              progress.
             </p>
 
-            <button type="button">
+            <button
+              type="button"
+              onClick={() => {
+                // Progress page can be connected
+                // when the frontend page is available.
+              }}
+            >
               View Progress →
             </button>
           </div>
@@ -163,10 +195,17 @@ function Dashboard() {
             <h3>Recommendations</h3>
 
             <p>
-              Explore nutrition recommendations and guidance.
+              Explore nutrition recommendations
+              and guidance.
             </p>
 
-            <button type="button">
+            <button
+              type="button"
+              onClick={() => {
+                // Recommendations page can be connected
+                // when the frontend page is available.
+              }}
+            >
               View Recommendations →
             </button>
           </div>

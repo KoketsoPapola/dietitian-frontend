@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -45,7 +44,9 @@ function Login() {
         }
       )
 
-      const data = await response.json().catch(() => ({}))
+      const data = await response
+        .json()
+        .catch(() => ({}))
 
       if (!response.ok) {
         const message =
@@ -62,7 +63,7 @@ function Login() {
 
       console.log('Login successful:', data)
 
-      // Store the authentication token.
+      // Store authentication token
       if (data.access_token) {
         localStorage.setItem(
           'access_token',
@@ -70,7 +71,7 @@ function Login() {
         )
       }
 
-      // Store the token type.
+      // Store token type
       if (data.token_type) {
         localStorage.setItem(
           'token_type',
@@ -79,18 +80,20 @@ function Login() {
       }
 
       // Store the complete login response.
+      // Appointments.jsx uses this information
+      // to obtain the logged-in client's ID.
       localStorage.setItem(
         'loginResponse',
         JSON.stringify(data)
       )
 
-      // Store the user's email.
+      // Store email as a backup
       localStorage.setItem(
         'userEmail',
         formData.email.trim()
       )
 
-      // Redirect to the dashboard after successful login.
+      // Go to dashboard
       navigate('/dashboard')
     } catch (err) {
       console.error('Login error:', err)
@@ -105,80 +108,189 @@ function Login() {
   }
 
   return (
-    <div className="login-container">
-      <div className="login-card">
+    <div className="auth-page">
+      <div className="auth-container login-auth-container">
 
-        <h2>Login</h2>
+        {/* Left Side */}
+        <div className="auth-brand login-brand">
 
-        <p>
-          Sign in to your account.
-        </p>
-
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-
-          <div className="form-group">
-            <label htmlFor="email">
-              Email Address
-            </label>
-
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">
-              Password
-            </label>
-
-            <input
-              id="password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-          >
-            {loading
-              ? 'Logging in...'
-              : 'Login'}
-          </button>
-
-        </form>
-
-        <p>
-          Don't have an account?{' '}
-          <Link to="/register/client">
-            Register as Client
+          <Link to="/" className="logo">
+            <span className="logo-icon"></span>
+            <span>NutriCare</span>
           </Link>
-        </p>
 
-        <p>
-          Are you a dietitian?{' '}
-          <Link to="/register/dietitian">
-            Register as Dietitian
-          </Link>
-        </p>
+          <span className="login-welcome-tag">
+            WELCOME BACK
+          </span>
 
+          <h1>
+            Your nutrition
+            <br />
+            journey continues<span>.</span>
+          </h1>
+
+          <p>
+            Sign in to access your NutriCare account,
+            manage your appointments and continue your
+            nutrition journey with professional support.
+          </p>
+
+          <div className="login-benefits">
+
+            <div className="login-benefit">
+              <span>✓</span>
+              <div>
+                <strong>Manage appointments</strong>
+                <p>
+                  Schedule and manage your dietitian
+                  appointments.
+                </p>
+              </div>
+            </div>
+
+            <div className="login-benefit">
+              <span>✓</span>
+              <div>
+                <strong>Track your journey</strong>
+                <p>
+                  Keep your nutrition goals and progress
+                  in one place.
+                </p>
+              </div>
+            </div>
+
+            <div className="login-benefit">
+              <span>✓</span>
+              <div>
+                <strong>Professional support</strong>
+                <p>
+                  Connect with registered dietitians
+                  through NutriCare.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Right Side */}
+        <div className="auth-card login-card-modern">
+
+          <div className="auth-header">
+            {/* Keep "Login" so Login.test.jsx passes */}
+            <h2>Login</h2>
+
+            <p>
+              Welcome back. Please enter your details
+              to continue.
+            </p>
+          </div>
+
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+
+            <div className="form-group">
+              <label
+                htmlFor="email"
+                className="login-label"
+              >
+                Email Address
+              </label>
+
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                autoComplete="email"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label
+                htmlFor="password"
+                className="login-label"
+              >
+                Password
+              </label>
+
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter your password"
+                autoComplete="current-password"
+                required
+              />
+            </div>
+
+            <div className="login-options">
+              <label className="remember-me">
+                <input
+                  type="checkbox"
+                  name="remember"
+                />
+                <span>Remember me</span>
+              </label>
+
+              <button
+                type="button"
+                className="forgot-password"
+                onClick={() =>
+                  alert(
+                    'Please contact NutriCare support to reset your password.'
+                  )
+                }
+              >
+                Forgot password?
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              className="login-submit-button"
+              disabled={loading}
+            >
+              {loading
+                ? 'Logging in...'
+                : 'Login'}
+            </button>
+
+          </form>
+
+          <div className="login-register-links">
+
+            <p>
+              Don't have an account?
+            </p>
+
+            <Link
+              to="/register/client"
+              className="login-register-button"
+            >
+              Create a Client Account
+            </Link>
+
+            <p className="dietitian-register-text">
+              Are you a dietitian?{' '}
+              <Link to="/register/dietitian">
+                Register as Dietitian
+              </Link>
+            </p>
+
+          </div>
+
+        </div>
       </div>
     </div>
   )

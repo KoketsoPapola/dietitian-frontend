@@ -14,8 +14,10 @@ function DietitianRegister() {
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [registrationSuccess, setRegistrationSuccess] = useState(false)
-  const [registeredUser, setRegisteredUser] = useState(null)
+  const [registrationSuccess, setRegistrationSuccess] =
+    useState(false)
+  const [registeredUser, setRegisteredUser] =
+    useState(null)
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -43,28 +45,39 @@ function DietitianRegister() {
           body: JSON.stringify({
             full_name: formData.full_name.trim(),
             email: formData.email.trim(),
-            license_number: formData.license_number.trim(),
+            license_number:
+              formData.license_number.trim(),
           }),
         }
       )
 
-      const data = await response.json().catch(() => ({}))
+      const data = await response
+        .json()
+        .catch(() => ({}))
 
       if (!response.ok) {
         const message =
           data?.detail
             ? Array.isArray(data.detail)
-              ? data.detail.map((item) => item.msg).join(', ')
+              ? data.detail
+                  .map((item) => item.msg)
+                  .join(', ')
               : data.detail
             : `Registration failed (${response.status})`
 
         throw new Error(message)
       }
 
-      setRegisteredUser(data.user || null)
+      setRegisteredUser(
+        data.user || data
+      )
+
       setRegistrationSuccess(true)
     } catch (err) {
-      console.error('Dietitian registration error:', err)
+      console.error(
+        'Dietitian registration error:',
+        err
+      )
 
       setError(
         err.message ||
@@ -82,35 +95,54 @@ function DietitianRegister() {
           <h2>Registration Successful</h2>
 
           <p>
-            Your dietitian registration has been submitted successfully.
+            Your dietitian registration has been
+            submitted successfully.
           </p>
 
           {registeredUser && (
             <div className="success-details">
               <p>
-                <strong>Name:</strong> {registeredUser.full_name}
+                <strong>Name:</strong>{' '}
+                {registeredUser.full_name ||
+                  'N/A'}
               </p>
 
               <p>
-                <strong>Email:</strong> {registeredUser.email}
+                <strong>Email:</strong>{' '}
+                {registeredUser.email ||
+                  'N/A'}
               </p>
 
               <p>
                 <strong>License Number:</strong>{' '}
-                {registeredUser.license_number}
+                {registeredUser.license_number ||
+                  'N/A'}
               </p>
 
               <p>
-                <strong>Status:</strong> {registeredUser.status}
+                <strong>Status:</strong>{' '}
+                {registeredUser.status ||
+                  'N/A'}
               </p>
 
               <p>
-                <strong>Dietitian ID:</strong> {registeredUser.id}
+                <strong>Dietitian ID:</strong>{' '}
+                {registeredUser.id ||
+                  registeredUser.dietitian_id ||
+                  'N/A'}
               </p>
             </div>
           )}
 
-          <button onClick={() => navigate('/login')}>
+          <p>
+            Your profile can now be used when
+            scheduling appointments.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+          >
             Continue to Login
           </button>
         </div>
@@ -124,7 +156,7 @@ function DietitianRegister() {
         <h2>Dietitian Registration</h2>
 
         <p>
-          Register as a dietitian.
+          Create your professional NutriCare account.
         </p>
 
         {error && (
@@ -186,7 +218,9 @@ function DietitianRegister() {
             type="submit"
             disabled={loading}
           >
-            {loading ? 'Registering...' : 'Register'}
+            {loading
+              ? 'Registering...'
+              : 'Register'}
           </button>
         </form>
 

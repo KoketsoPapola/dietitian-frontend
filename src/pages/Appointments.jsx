@@ -3,37 +3,97 @@ import API_BASE_URL from '../services/api'
 
 function Appointments() {
   const [appointments, setAppointments] = useState([])
+  const [dietitians, setDietitians] = useState([])
+
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [loadingDietitians, setLoadingDietitians] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
   const [formData, setFormData] = useState({
-    client_id: '',
     dietitian_id: '',
     appointment_date: '',
   })
 
+  const getClientId = () => {
+    try {
+      const storedUser =
+        localStorage.getItem('user') ||
+        localStorage.getItem('currentUser') ||
+        localStorage.getItem('client')
+
+      if (!storedUser) return ''
+
+      const user = JSON.parse(storedUser)
+
+      return (
+        user.client_id ||
+        user.id ||
+        user.user_id ||
+        ''
+      )
+    } catch (err) {
+      console.error('Unable to read logged-in user:', err)
+      return ''
+    }
+  }
+
+  const getErrorMessage = (data, fallback) => {
+    if (data?.detail) {
+      if (Array.isArray(data.detail)) {
+        return data.detail
+          .map((item) => item.msg)
+          .join(', ')
+      }
+
+      return data.detail
+    }
+
+    return fallback
+  }
+
+  // Load appointments from the backend
   const fetchAppointments = async () => {
     try {
       setLoading(true)
       setError('')
 
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/appointments`
+        `${API_BASE_URL}/appointments`
       )
 
       const data = await response.json().catch(() => [])
 
       if (!response.ok) {
         throw new Error(
-          data?.detail || 'Failed to load appointments'
+          getErrorMessage(
+            data,
+            `Failed to load appointments (${response.status})`
+          )
         )
       }
 
-      setAppointments(
-        Array.isArray(data) ? data : []
-      )
+      const allAppointments = Array.isArray(data)
+        ? data
+        : Array.isArray(data.appointments)
+          ? data.appointments
+          : []
+
+      const clientId = getClientId()
+
+      if (clientId) {
+        const myAppointments = allAppointments.filter(
+          (appointment) =>
+            String(appointment.client_id) ===
+            String(clientId)
+        )
+
+        setAppointments(myAppointments)
+      } else {
+        setAppointments([])
+      }
     } catch (err) {
       console.error('Fetch appointments error:', err)
 
@@ -46,8 +106,43 @@ function Appointments() {
     }
   }
 
+  // TEMPORARY:
+  // The backend currently does not provide GET /dietitians.
+  // We keep this function ready for when the endpoint becomes available.
+  const fetchDietitians = async () => {
+    try {
+      setLoadingDietitians(true)
+
+      // Temporary test dietitian.
+      // This keeps the dropdown functional while the
+      // real dietitian endpoint is being completed.
+      setDietitians([
+        {
+          dietitian_id: 'diet_temp_001',
+          first_name: 'Thabo',
+          last_name: 'Mokoena',
+          specialisation: '',
+        },
+      ])
+    } catch (err) {
+      console.error(
+        'Fetch dietitians error:',
+        err
+      )
+
+      setDietitians([])
+
+      setError(
+        'Unable to load dietitians.'
+      )
+    } finally {
+      setLoadingDietitians(false)
+    }
+  }
+
   useEffect(() => {
     fetchAppointments()
+    fetchDietitians()
   }, [])
 
   const handleChange = (event) => {
@@ -57,6 +152,9 @@ function Appointments() {
       ...previous,
       [name]: value,
     }))
+
+    setError('')
+    setSuccess('')
   }
 
   const handleSubmit = async (event) => {
@@ -64,40 +162,68 @@ function Appointments() {
 
     setError('')
     setSuccess('')
+
+    const clientId = getClientId()
+
+    if (!clientId) {
+      setError(
+        'Your client information could not be found. Please log in again.'
+      )
+      return
+    }
+
+    if (!formData.dietitian_id) {
+      setError(
+        'Please select a dietitian.'
+      )
+      return
+    }
+
+    if (formData.dietitian_id === 'diet_temp_001') {
+      setError(
+        'This is a temporary dietitian option. Please use a real dietitian once they are available.'
+      )
+      return
+    }
+
+    if (!formData.appointment_date) {
+      setError(
+        'Please select an appointment date.'
+      )
+      return
+    }
+
     setSubmitting(true)
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/v1/appointments`,
+        `${API_BASE_URL}/appointments`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            client_id: formData.client_id.trim(),
-            dietitian_id: formData.dietitian_id.trim(),
+            client_id: clientId,
+            dietitian_id:
+              formData.dietitian_id,
             appointment_date:
               formData.appointment_date,
+            notes:
+              'Initial nutrition consultation',
           }),
         }
       )
 
-      const data = await response
-        .json()
-        .catch(() => ({}))
+      const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        const message =
-          data?.detail
-            ? Array.isArray(data.detail)
-              ? data.detail
-                  .map((item) => item.msg)
-                  .join(', ')
-              : data.detail
-            : `Failed to create appointment (${response.status})`
-
-        throw new Error(message)
+        throw new Error(
+          getErrorMessage(
+            data,
+            `Failed to book appointment (${response.status})`
+          )
+        )
       }
 
       console.log(
@@ -106,11 +232,10 @@ function Appointments() {
       )
 
       setSuccess(
-        'Appointment booked successfully.'
+        'Appointment booked successfully!'
       )
 
       setFormData({
-        client_id: '',
         dietitian_id: '',
         appointment_date: '',
       })
@@ -133,7 +258,6 @@ function Appointments() {
 
   return (
     <div className="page-container">
-
       <section className="page-header">
         <span className="section-tag">
           NUTRICARE
@@ -142,60 +266,85 @@ function Appointments() {
         <h1>Appointments</h1>
 
         <p>
-          Schedule and manage appointments between
-          clients and dietitians.
+          Schedule and manage appointments with
+          qualified dietitians.
         </p>
       </section>
 
       <section className="appointment-form-section">
-
         <h2>Book an Appointment</h2>
 
         <p>
-          Enter the client and dietitian details
-          below to schedule an appointment.
+          Select a dietitian and choose your
+          preferred appointment date.
         </p>
 
         <form
           onSubmit={handleSubmit}
           className="appointment-form"
         >
-
-          <div className="form-group">
-            <label htmlFor="client_id">
-              Client ID
-            </label>
-
-            <input
-              id="client_id"
-              name="client_id"
-              type="text"
-              value={formData.client_id}
-              onChange={handleChange}
-              placeholder="e.g. cli_12345678"
-              required
-            />
-          </div>
-
           <div className="form-group">
             <label htmlFor="dietitian_id">
-              Dietitian ID
+              Dietitian
             </label>
 
-            <input
+            <select
               id="dietitian_id"
               name="dietitian_id"
-              type="text"
               value={formData.dietitian_id}
               onChange={handleChange}
-              placeholder="e.g. diet_12345678"
               required
-            />
+              disabled={
+                submitting ||
+                loadingDietitians
+              }
+            >
+              <option value="">
+                {loadingDietitians
+                  ? 'Loading dietitians...'
+                  : 'Select a dietitian'}
+              </option>
+
+              {dietitians.length > 0 ? (
+                dietitians.map((dietitian) => {
+                  const dietitianId =
+                    dietitian.dietitian_id ||
+                    dietitian.id
+
+                  const firstName =
+                    dietitian.first_name ||
+                    dietitian.name ||
+                    'Dietitian'
+
+                  const lastName =
+                    dietitian.last_name || ''
+
+                  const specialisation =
+                    dietitian.specialisation
+
+                  return (
+                    <option
+                      key={dietitianId}
+                      value={dietitianId}
+                    >
+                      {firstName} {lastName}
+                      {specialisation
+                        ? ` - ${specialisation}`
+                        : ''}
+                    </option>
+                  )
+                })
+              ) : (
+                <option value="no_dietitian">
+                  No dietitians available
+                </option>
+              )}
+            </select>
           </div>
 
           <div className="form-group">
             <label htmlFor="appointment_date">
-              Date
+              Appointment Date
             </label>
 
             <input
@@ -204,7 +353,13 @@ function Appointments() {
               type="date"
               value={formData.appointment_date}
               onChange={handleChange}
+              min={
+                new Date()
+                  .toISOString()
+                  .split('T')[0]
+              }
               required
+              disabled={submitting}
             />
           </div>
 
@@ -216,7 +371,6 @@ function Appointments() {
               ? 'Booking...'
               : 'Book Appointment'}
           </button>
-
         </form>
 
         {success && (
@@ -230,20 +384,21 @@ function Appointments() {
             {error}
           </p>
         )}
-
       </section>
 
       <section className="appointments-list">
-
-        <h2>Appointments</h2>
+        <h2>My Appointments</h2>
 
         {loading ? (
-          <p>Loading appointments...</p>
+          <p>
+            Loading appointments...
+          </p>
         ) : appointments.length === 0 ? (
-          <p>No appointments found.</p>
+          <p>
+            You have no appointments yet.
+          </p>
         ) : (
           <div className="appointment-cards">
-
             {appointments.map(
               (appointment, index) => (
                 <div
@@ -253,7 +408,6 @@ function Appointments() {
                     index
                   }
                 >
-
                   <h3>
                     Appointment{' '}
                     {appointment.appointment_id ||
@@ -284,15 +438,18 @@ function Appointments() {
                       'N/A'}
                   </p>
 
+                  {appointment.notes && (
+                    <p>
+                      <strong>Notes:</strong>{' '}
+                      {appointment.notes}
+                    </p>
+                  )}
                 </div>
               )
             )}
-
           </div>
         )}
-
       </section>
-
     </div>
   )
 }
